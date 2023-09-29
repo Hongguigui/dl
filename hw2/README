@@ -1,0 +1,19 @@
+## Run mlp.py to generate plots
+
+linear.py:
+    the reused Linear module
+
+mlp.py:
+    contains the MLP module and code to train the mlp model
+
+mlp_tests.py:
+    unit tests for the MLP module
+
+boundary.png:
+    the output graph of the decision boundary with threshold 0.5
+
+surface.png:
+    the output graph of the decision surface without thresholds
+
+requirements.txt:
+    contains all the site packages installed

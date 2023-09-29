@@ -1,0 +1,19 @@
+## Run linnear.py to generate plots
+
+linear.py:
+    the Linear module and subsequent code to train the modules
+
+basis_expansion.py:
+    contains the BasisExpansion module
+
+basis_tests.py:
+    unit tests for the BasisExpansion module
+
+linear_tests.py:
+    unit tests for the Linear module as well as an integration test
+
+plot.pdf:
+    the output graph of the fitted model and the basis functions
+
+requirements.txt:
+    contains all the site packages installed

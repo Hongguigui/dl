@@ -1,0 +1,6 @@
+train_loss: 0.081055164
+train_acc: 0.9821042
+validation_loss: 0.119572386
+validation_acc: 0.97083336
+test_loss: 0.114043035
+test_acc: 0.9712
