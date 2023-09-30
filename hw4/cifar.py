@@ -90,8 +90,35 @@ def get_CIFAR10_data():
     return x_train, y_train, x_test, y_test
 
 
+def unpickle(file):
+    import pickle
+    with open(file, 'rb') as fo:
+        dict = pickle.load(fo, encoding='bytes')
+    return dict
+
+
+def get_100():
+    data_pre_path = './cifar-100-python/'  # change this path
+    # File paths
+    data_train_path = data_pre_path + 'train'
+    data_test_path = data_pre_path + 'test'
+    # Read dictionary
+    data_train_dict = unpickle(data_train_path)
+    data_test_dict = unpickle(data_test_path)
+    # Get data (change the coarse_labels if you want to use the 100 classes)
+    data_train = data_train_dict[b'data']
+    label_train = np.array(data_train_dict[b'fine_labels'])
+    data_test = data_test_dict[b'data']
+    label_test = np.array(data_test_dict[b'fine_labels'])
+    data_train = np.float32(data_train / 255)
+    data_test = np.float32(data_test / 255)
+
+    return data_train, label_train, data_test, label_test
+
+
 # adapted from https://github.com/taki0112/Group_Normalization-Tensorflow
 # and https://amaarora.github.io/posts/2020-08-09-groupnorm.html
+# and https://arxiv.org/abs/1803.08494
 # normalize along axes H W C//G
 class GroupNorm(tf.Module):
     def __init__(self, num_channels):
@@ -266,15 +293,15 @@ class Classifier(tf.Module):
         self.current_dim = self.input_dim
         self.dropout = 0
 
-        self.conv0 = Conv2d(16, self.kernels, 1, 3, self.input_dim)
+        self.conv0 = Conv2d(32, self.kernels, 1, 3, self.input_dim)
         self.blocks.append(
-            ResidualBlock(in_channels=16, out_channels=32, filter_size=self.kernels, input_size=(32, 32)))
+            ResidualBlock(in_channels=32, out_channels=64, filter_size=self.kernels, input_size=(32, 32)))
         self.blocks.append(
-            ResidualBlock(in_channels=32, out_channels=64, filter_size=self.kernels, input_size=(16, 16)))
+            ResidualBlock(in_channels=64, out_channels=64, filter_size=self.kernels, input_size=(16, 16)))
         self.blocks.append(
             ResidualBlock(in_channels=64, out_channels=128, filter_size=self.kernels, input_size=(8, 8)))
         # self.blocks.append(
-        #     ResidualBlock(in_channels=128, out_channels=256, filter_size=self.kernels, input_size=(4, 4)))
+        #     ResidualBlock(in_channels=128, out_channels=128, filter_size=self.kernels, input_size=(4, 4)))
         # self.blocks.append(
         #     ResidualBlock(in_channels=64, out_channels=128, filter_size=self.kernels, input_size=(2, 2)))
 
@@ -390,6 +417,7 @@ def img_aug(img_batch, seed):
     images, label = img_batch
     result = tf.image.random_flip_left_right(images)
     result = tf.image.random_brightness(result, 0.2)
+    result = tf.image.random_hue(result, max_delta=0.2)
     result = tf.image.random_contrast(result, lower=0.6, upper=1.2)
     result = tf.clip_by_value(result, clip_value_min=0., clip_value_max=1.)
 
@@ -412,7 +440,11 @@ if __name__ == '__main__':
     classes = ('plane', 'car', 'bird', 'cat',
                'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-    x_train, y_train, x_test, y_test = get_CIFAR10_data()
+    cifar = 10
+    if cifar == 10:
+        x_train, y_train, x_test, y_test = get_CIFAR10_data()
+    else:
+        x_train, y_train, x_test, y_test = get_100()
 
     # print('Train data shape: ', x_train.shape)
     # print('Train labels shape: ', y_train.shape)
@@ -433,11 +465,11 @@ if __name__ == '__main__':
     print('Test data shape: ', x_test.shape)
     print('Test labels shape: ', y_test.shape)
 
-    num_epochs = 100
-    step_size = 0.008
+    num_epochs = 150
+    step_size = 0.01
     decay_rate = 0.98
     refresh_rate = 10
-    batch_size = 32
+    batch_size = 64
 
     input_shape = x_train[0].shape
     # random_plots(x_train, y_train, 'train', classes)

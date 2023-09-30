@@ -15,5 +15,22 @@ Validation top_k accuracy: 0.9907444
 Test accuracy: 0.84584
 Test top_k accuracy: 0.9938296
 
-now change batch size to 32 for better group norm
+now change batch size to 32
 
+Training accuracy: 0.9469
+Augmented_raining accuracy: 0.94555
+Validation accuracy: 0.85947454
+Validation top_k accuracy: 0.99223727
+Test accuracy: 0.8541998
+Test top_k accuracy: 0.99263537
+
+added another 128 128 block everything else the same
+
+Training accuracy: 0.932225
+Augmented_raining accuracy: 0.9309
+Validation accuracy: 0.83130974
+Validation top_k accuracy: 0.9891521
+Test accuracy: 0.82165605
+Test top_k accuracy: 0.98905253
+
+doubles the channel counts for first 2 blocks and initial layer 700k params
