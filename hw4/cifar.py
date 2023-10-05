@@ -1,16 +1,15 @@
 import os
-# os.add_dll_directory("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8/bin")
-import gzip
 import pickle
+
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-from tqdm import trange
 from tensorflow.python.client import device_lib
-import matplotlib
+from tqdm import trange
+
 matplotlib.use('TkAgg')
-import time
 
 
 class Linear(tf.Module):
@@ -55,7 +54,7 @@ def load_CIFAR_batch(filename):
         datadict = load_pickle(f)
         X = datadict['data']
         Y = datadict['labels']
-        X = X.reshape(10000,3072)
+        X = X.reshape(10000, 3072)
         Y = np.array(Y)
         return X, Y
 
@@ -78,42 +77,23 @@ def load_CIFAR10(ROOT):
 def get_CIFAR10_data():
     # Load the raw CIFAR-10 data
     cifar10_dir = './cifar-10-batches-py/'
-    x_train, y_train, x_test, y_test = load_CIFAR10(cifar10_dir)
+    x_train_10, y_train_10, x_test_10, y_test_10 = load_CIFAR10(cifar10_dir)
     # Subsample the data
 
-    x_train = x_train.astype('float32')
-    x_test = x_test.astype('float32')
+    x_train_10 = x_train_10.astype('float32')
+    x_test_10 = x_test_10.astype('float32')
 
-    x_train /= 255
-    x_test /= 255
+    x_train_10 /= 255
+    x_test_10 /= 255
 
-    return x_train, y_train, x_test, y_test
+    return x_train_10, y_train_10, x_test_10, y_test_10
 
 
 def unpickle(file):
     import pickle
-    with open(file, 'rb') as fo:
-        dict = pickle.load(fo, encoding='bytes')
-    return dict
-
-
-def get_100():
-    data_pre_path = './cifar-100-python/'  # change this path
-    # File paths
-    data_train_path = data_pre_path + 'train'
-    data_test_path = data_pre_path + 'test'
-    # Read dictionary
-    data_train_dict = unpickle(data_train_path)
-    data_test_dict = unpickle(data_test_path)
-    # Get data (change the coarse_labels if you want to use the 100 classes)
-    data_train = data_train_dict[b'data']
-    label_train = np.array(data_train_dict[b'fine_labels'])
-    data_test = data_test_dict[b'data']
-    label_test = np.array(data_test_dict[b'fine_labels'])
-    data_train = np.float32(data_train / 255)
-    data_test = np.float32(data_test / 255)
-
-    return data_train, label_train, data_test, label_test
+    with open(file, 'rb') as f_o:
+        dictionary = pickle.load(f_o, encoding='bytes')
+    return dictionary
 
 
 # adapted from https://github.com/taki0112/Group_Normalization-Tensorflow
@@ -133,7 +113,6 @@ class GroupNorm(tf.Module):
         mean, var = tf.nn.moments(x, [1, 2, 4], keepdims=True)
         x = (x - mean) / tf.sqrt(var + 1e-5)
         x = tf.reshape(x, [N, H, W, C])
-        # print(x.shape)
 
         return x * self.gamma + self.beta
 
@@ -143,6 +122,7 @@ def gn_relu(gn, x):
     gr = tf.nn.relu(x_gn)
 
     return gr
+
 
 # identity and convolutional blocks
 class ResidualBlock(tf.Module):
@@ -198,8 +178,8 @@ class ResidualBlock(tf.Module):
     def conv_block(self, blk_input, dropout):
         skip = self.conv2(blk_input)
         y = None
-        for i, (gn, conv) in enumerate(zip(self.conv_blk_gn, self.conv_blk_conv)):
-            if i == 0:
+        for k, (gn, conv) in enumerate(zip(self.conv_blk_gn, self.conv_blk_conv)):
+            if k == 0:
                 y = gn_relu(gn, blk_input)
                 y = conv(y)
 
@@ -216,15 +196,6 @@ class ResidualBlock(tf.Module):
         return y
 
     def id_block(self, id_input, gn_list, conv_list, dropout):
-        # identity = id_input
-        # y_id = gn_relu(self.gn3, id_input)
-        # y_id = self.conv3(y_id)
-        # y_id = gn_relu(self.gn4, y_id)
-        # if dropout:
-        #     y_id = tf.nn.dropout(y_id, rate=0.1)
-        # y_id = self.conv4(y_id)
-        # y_id = tf.math.add(y_id, identity)
-
         identity = id_input
         y_id = gn_relu(gn_list[0], id_input)
         y_id = conv_list[0](y_id)
@@ -245,13 +216,12 @@ class ResidualBlock(tf.Module):
         return y_id_1
 
     def __call__(self, x, dropout):
-        y_hat = self.stack_id_block(x, dropout)
+        y_hat_res = self.stack_id_block(x, dropout)
         if dropout:
-            y_hat = tf.nn.dropout(y_hat, rate=0.1)
-        # y_hat = self.id_block(y_hat, dropout)
-        y_hat = self.conv_block(y_hat, dropout)
+            y_hat_res = tf.nn.dropout(y_hat_res, rate=0.1)
+        y_hat_res = self.conv_block(y_hat_res, dropout)
 
-        return tf.nn.relu(y_hat)
+        return tf.nn.relu(y_hat_res)
 
 
 class Conv2d(tf.Module):
@@ -318,7 +288,7 @@ class Classifier(tf.Module):
             if dropout:
                 self.y_hat = tf.nn.dropout(self.y_hat, rate=self.dropout)
                 self.y_hat = block(self.y_hat, 1)
-                # self.dropout += 0.05
+                self.dropout += 0.05
             else:
                 self.y_hat = block(self.y_hat, 0)
 
@@ -327,7 +297,6 @@ class Classifier(tf.Module):
         if dropout:
             self.dropout = 0.5
         self.y_hat = flatten(self.y_hat)
-        # self.y_hat = tf.nn.relu(self.fc0(self.y_hat))
         if dropout:
             self.y_hat = tf.nn.dropout(self.y_hat, rate=self.dropout)
         self.y_hat = self.fc1(self.y_hat)
@@ -389,6 +358,7 @@ def scce_loss(y, y_hat, weights):
     return tf.reduce_mean(scce + alpha * l2), alpha * l2
 
 
+# assumes that dataset length is divisible by batch size
 def evaluate_model(model, dataset, name, epochs):
     acc_list = []
     top_k_acc_list = []
@@ -424,6 +394,29 @@ def img_aug(img_batch, seed):
     return result, label
 
 
+def img_aug_100(img_batch, seed):
+    images, label = img_batch
+    result = tf.image.random_flip_left_right(images)
+    result = tf.image.random_brightness(result, 0.2)
+    result = tf.image.random_hue(result, max_delta=0.2)
+    result = tf.image.random_contrast(result, lower=0.6, upper=1.2)
+    result = tf.clip_by_value(result, clip_value_min=0., clip_value_max=1.)
+
+    return result, label
+
+
+def get_100(file):
+    data = unpickle(file)
+    x = data[b'data']
+
+    x = x.reshape(len(x), 3, 32, 32).transpose(0, 2, 3, 1)
+    x = np.float32(x)
+    y = data[b'fine_labels']
+    x = x / 255
+
+    return x, y
+
+
 if __name__ == '__main__':
     physical_devices = tf.config.list_physical_devices('GPU')
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -437,22 +430,27 @@ if __name__ == '__main__':
     image_cols = 32
     image_shape = (image_rows, image_cols, 3)
     image_dims = [image_rows, image_cols]
-    classes = ('plane', 'car', 'bird', 'cat',
-               'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+    cifar = 10  # 10 for cifar-10 else cifar-100
+    fine_tune = 0  # 1 to reload the latest checkpoint
 
-    cifar = 10
     if cifar == 10:
         x_train, y_train, x_test, y_test = get_CIFAR10_data()
+        num_classes = 10
+        x_train = x_train.reshape((len(x_train), 3, 32, 32)).transpose(0, 2, 3, 1)
+        x_test = x_test.reshape((len(x_test), 3, 32, 32)).transpose(0, 2, 3, 1)
+        classes = ('plane', 'car', 'bird', 'cat',
+                   'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
     else:
-        x_train, y_train, x_test, y_test = get_100()
+        input_file = './cifar-100-python/train'
+        x_train, y_train = get_100(input_file)
+        test_file = './cifar-100-python/test'
+        x_test, y_test = get_100(test_file)
 
-    # print('Train data shape: ', x_train.shape)
-    # print('Train labels shape: ', y_train.shape)
-    # print('Test data shape: ', x_test.shape)
-    # print('Test labels shape: ', y_test.shape)
-
-    x_train = x_train.reshape((len(x_train), 3, 32, 32)).transpose(0, 2, 3, 1)
-    x_test = x_test.reshape((len(x_test), 3, 32, 32)).transpose(0, 2, 3, 1)
+        meta_file = './cifar-100-python/meta'
+        meta_data = unpickle(meta_file)
+        classes = meta_data[b'fine_label_names']
+        num_classes = 100
+        # print(x_train.shape)
 
     x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.2, random_state=42, shuffle=True)
 
@@ -460,10 +458,10 @@ if __name__ == '__main__':
     y_val = np.int32(y_val)
     y_test = np.int32(y_test)
 
-    print('Train data shape: ', x_train.shape)
-    print('Train labels shape: ', y_train.shape)
-    print('Test data shape: ', x_test.shape)
-    print('Test labels shape: ', y_test.shape)
+    # print('Train data shape: ', x_train.shape)
+    # print('Train labels shape: ', y_train.shape)
+    # print('Test data shape: ', x_test.shape)
+    # print('Test labels shape: ', y_test.shape)
 
     num_epochs = 150
     step_size = 0.01
@@ -491,19 +489,22 @@ if __name__ == '__main__':
     AUTOTUNE = tf.data.experimental.AUTOTUNE
     counter = tf.data.experimental.Counter()
     train_dataset = tf.data.Dataset.zip((train_dataset, (counter, counter)))
-    train_dataset = train_dataset.map(img_aug, num_parallel_calls=AUTOTUNE).shuffle(buf_size).batch(
-        batch_size).prefetch(AUTOTUNE)
+    if cifar == 10:
+        train_dataset = train_dataset.map(img_aug, num_parallel_calls=AUTOTUNE).shuffle(buf_size).batch(
+            batch_size).prefetch(AUTOTUNE)
+    else:
+        train_dataset = train_dataset.map(img_aug_100, num_parallel_calls=AUTOTUNE).shuffle(buf_size).batch(
+            batch_size).prefetch(AUTOTUNE)
 
     val_dataset = val_dataset.batch(64)
     test_dataset = test_dataset.batch(64)
 
-    fine_tune = 0
     validate_per_epochs = 10
 
-    path = f'./checkpoint/'
+    path = './checkpoint/'
     kernels = (3, 3)
     classifier = Classifier(input_depth=x_train.shape[-1], layer_kernel_sizes=kernels,
-                            num_classes=10, hidden_width=64, input_dim=x_train[0].shape)
+                            num_classes=num_classes, hidden_width=64, input_dim=x_train[0].shape)
 
     ckpt = tf.train.Checkpoint(classifier=classifier)
     manager = tf.train.CheckpointManager(
@@ -514,10 +515,8 @@ if __name__ == '__main__':
         step_size = 0.006  # warm restart with higher lr
         decay_rate = 0.96  # maybe faster decay
         validate_per_epochs = 2
-        # num_epochs = 100
+        num_epochs = 50
         status.assert_consumed()
-
-
 
     classifier_total_parameters = 0
     for variable in classifier.trainable_variables:
@@ -528,6 +527,8 @@ if __name__ == '__main__':
         classifier_total_parameters += variable_parameters
 
     print("\nNumber of trainable parameters: ", classifier_total_parameters)
+
+    best_val_acc = 0
 
     bar = trange(num_epochs)
 
@@ -565,10 +566,17 @@ if __name__ == '__main__':
             validate_per_epochs = 5
         if ((i % validate_per_epochs == validate_per_epochs-1) & (i > 0)) or (i % validate_per_epochs == 3 & i >= 0.7*num_epochs):
             val_acc, val_top_k_acc = evaluate_model(classifier, val_dataset, 'validation', epochs=i)
-            if val_acc >= 0.85:
-                manager.save()
-            if val_acc >= 0.9:
-                break
+            if cifar == 10:
+                if val_acc >= 0.85 and val_acc > best_val_acc:
+                    best_val_acc = val_acc
+                    manager.save()
+                if val_acc >= 0.91:
+                    break
+            else:
+                if val_top_k_acc >= 0.75:
+                    manager.save()
+                if val_top_k_acc >= 0.92:
+                    break
 
     try:
         train_acc, _ = evaluate_model(classifier, plain_train_dataset, 'train', None)
@@ -579,10 +587,68 @@ if __name__ == '__main__':
     augmented_train_acc, _ = evaluate_model(classifier, train_dataset, 'augmented_train', None)  # augmented training set
     val_acc, val_top_k = evaluate_model(classifier, val_dataset, 'validation', None)
     test_acc, test_top_k = evaluate_model(classifier, test_dataset, 'test', None)
-    with open('cifar-10_log.txt', 'a') as fo:
+    with open(f'cifar-{cifar}_log.txt', 'a') as fo:
         fo.write('\nTraining accuracy: ' + str(train_acc.numpy()))
-        fo.write('\nAugmented_raining accuracy: ' + str(augmented_train_acc.numpy()))
+        fo.write('\nAugmented_training accuracy: ' + str(augmented_train_acc.numpy()))
         fo.write('\nValidation accuracy: ' + str(val_acc.numpy()))
         fo.write('\nValidation top_k accuracy: ' + str(val_top_k.numpy()))
         fo.write('\nTest accuracy: ' + str(test_acc.numpy()))
         fo.write('\nTest top_k accuracy: ' + str(test_top_k.numpy()))
+
+'''
+Setup (for both):
+    GPU: NVIDIA GeForce GTX 970
+    Epochs: 150
+    Batch size: 64 (cifar-10) | 32 (cifar-100)
+    Dropout: 0.1 everywhere except 0.5 before fully connected layers
+    Data augmentation: random horizontal flip, contrast, and brightness
+    L2: 1e-5
+
+Parameter count for cifar-10 model: 706378
+
+Performance for cifar-10:
+    Training accuracy: 0.986525
+    Augmented_training accuracy: 0.982775
+    Validation accuracy: 0.88644505
+    Validation top_5 accuracy: 0.99472535
+    Test accuracy: 0.8835589
+    Test top_5 accuracy: 0.9959196
+
+Parameter count for cifar-100 model: 752548
+
+Performance for cifar-100:
+    Training accuracy: 0.76425
+    Augmented_training accuracy: 0.76525
+    Validation accuracy: 0.54269505
+    Validation top_k accuracy: 0.83130974
+    Test accuracy: 0.5393113
+    Test top_k accuracy: 0.8308121
+
+the model for cifar-10 and cifar-100 uses one input convolutional layer followed by 3 residual blocks and
+one fully connected layer as the output layer
+the SOTA chosen for cifar-10 is the resnet-44 with top-1 accuracy of 90.5% selected from
+https://paperswithcode.com/paper/trainable-activations-for-image
+the main reason for this chosen SOTA is that the paper is published in 2023 and the structure of
+the model is similar to what is expected from the homework with residual blocks. In addition, the
+model of this size is small enough for me to perform a few experiments to achieve decent performance
+
+the manual implementation of group norm is so incredibly slow that the GN layers alone takes about
+half of the training time
+
+experiments with cifar-10:
+    models with sub-million parameter count seem to generalize better and also learn faster
+
+    fine-tuning the model by loading checkpoints and apply more dropouts may improve
+        the validation accuracy by up to 2%
+
+    applying incremental dropout as network goes deeper significantly impedes the ability for
+        the model to learn from the training set for model of this size
+
+    lower batch size sometimes significantly improves learning as well as generalization
+        example: 32 vs 64 results in almost 2% increase of validation accuracy for another model
+        * special thanks to Allister for running this file on his better GPU to test
+          the batch size differences
+
+experiments with cifar-100:
+    heavier data augmentation on cifar-100 could result in model completely not able to learn from scratch
+'''

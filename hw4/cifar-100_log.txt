@@ -1,0 +1,14 @@
+
+Training accuracy: 0.76425
+Augmented_training accuracy: 0.76525
+Validation accuracy: 0.54269505
+Validation top_k accuracy: 0.83130974
+Test accuracy: 0.5393113
+Test top_k accuracy: 0.8308121
+
+Training accuracy: 0.7154
+Augmented_training accuracy: 0.6829
+Validation accuracy: 0.54369026
+Validation top_k accuracy: 0.83230495
+Test accuracy: 0.54578024
+Test top_k accuracy: 0.82862264

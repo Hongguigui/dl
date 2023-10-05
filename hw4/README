@@ -1,16 +1,10 @@
-## Run mnist_main.py to generate train and evaluate model
+## Run cifar.py to generate train and evaluate model
 
-linear.py:
-    the reused Linear module
+cifar.py:
+    contains all the classes and code to train the models for both cifar-10 and cifar-100
 
-mnist_main.py:
-    contains the Conv2d and Classifier modules and code to train the model
-
-mnist_tests.py:
+cifar_tests.py:
     unit tests for the modules
-
-log.txt:
-    contains information about model evaluation after training
 
 requirements.txt:
     contains all the site packages installed
