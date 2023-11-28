@@ -1,0 +1,7 @@
+## Run ag_news.py to generate train and evaluate model
+
+ag_news.py:
+    contains code to finetune the model for both ag_news
+
+requirements.txt:
+    contains all the site packages installed

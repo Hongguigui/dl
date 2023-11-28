@@ -1,0 +1,8 @@
+## Run main.py to fit on an image
+
+# to use gpu comment out line 126
+# uncomment line 130-134 if gpu has enough ram (>= 12 GB) or adjust accordingly
+
+./output directory has various output_*.png images that come from the trained model
+
+raw_image.jpg is the colored image and output/gray_image.jpg is the pre-converted grayscale image

@@ -1,0 +1,13 @@
+## Run transformer_1d.py to train the model on ag_news to generate train and evaluate model
+
+transformer_1d.py:
+    contains code for the transformer implementations and the training interface
+
+transformer_tests.py:
+    contains test cases and demonstrations for transformer interfaces and functions
+
+train.csv/test.csv:
+    ag_news dataset files
+
+requirements.txt:
+    contains all the site packages installed

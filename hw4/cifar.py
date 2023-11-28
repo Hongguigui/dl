@@ -467,7 +467,7 @@ if __name__ == '__main__':
     step_size = 0.01
     decay_rate = 0.98
     refresh_rate = 10
-    batch_size = 64
+    batch_size = 512
 
     input_shape = x_train[0].shape
     # random_plots(x_train, y_train, 'train', classes)
