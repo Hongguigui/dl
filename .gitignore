@@ -6,3 +6,17 @@ hw3/csv/mnist_test.csv
 hw4/cifar-100-python/train
 hw4/cifar-100-python/test
 hw4/cifar-100-python/meta
+hw5/results/checkpoint-6000/added_tokens.json
+hw5/results/checkpoint-6000/config.json
+hw5/results/checkpoint-6000/optimizer.pt
+hw5/results/runs/Oct09_20-42-09_DESKTOP-JGE7ANT/events.out.tfevents.1696898529.DESKTOP-JGE7ANT.45920.0.v2
+hw5/results/runs/Oct09_20-39-27_DESKTOP-JGE7ANT/events.out.tfevents.1696898367.DESKTOP-JGE7ANT.40228.0.v2
+hw5/results/checkpoint-6000/vocab.txt
+hw5/results/checkpoint-6000/training_args.bin
+hw5/results/checkpoint-6000/trainer_state.json
+hw5/results/checkpoint-6000/tokenizer_config.json
+hw5/results/checkpoint-6000/tokenizer.json
+hw5/results/checkpoint-6000/special_tokens_map.json
+hw5/results/checkpoint-6000/scheduler.pt
+hw5/results/checkpoint-6000/rng_state.pth
+hw5/results/checkpoint-6000/pytorch_model.bin
